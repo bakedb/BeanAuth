@@ -1,4 +1,4 @@
-const BASE_URL = "https://beanauth.onrender.com/";
+const BASE_URL = "https://beanauth.onrender.com"; // no trailing slash
 
 async function createAccount() {
   const username = document.getElementById("signup-username").value.trim();
@@ -27,11 +27,12 @@ async function createAccount() {
           message.textContent = "⚠️ Username already exists. Try something else.";
           break;
         default:
-          message.textContent = `❌ Error creating account: ${result.error || "Unknown error"}`;
+          message.textContent = `❌ Server error: ${result.error || "Unknown issue"}`;
       }
     }
   } catch (err) {
-    message.textContent = "🚫 Network error while creating account.";
+    console.error("Account creation error:", err);
+    message.textContent = "🚫 Network error. Please try again later.";
   }
 }
 
@@ -52,20 +53,21 @@ async function login() {
     const result = await response.json();
 
     if (response.ok) {
-      message.textContent = `✅ Login successful. Welcome, ${username}!`;
+      message.textContent = `✅ Welcome, ${username}! Login successful.`;
     } else {
       switch (response.status) {
         case 403:
-          message.textContent = "🔐 Incorrect password. Please try again.";
+          message.textContent = "🔐 Incorrect password. Try again.";
           break;
         case 404:
-          message.textContent = "👤 Account not found. Did you sign up first?";
+          message.textContent = "👤 Account not found. Did you sign up yet?";
           break;
         default:
           message.textContent = `❌ Login failed: ${result.error || "Unexpected error"}`;
       }
     }
   } catch (err) {
-    message.textContent = "🚫 Network error while attempting login.";
+    console.error("Login error:", err);
+    message.textContent = "🚫 Network error. Is the server awake?";
   }
 }
