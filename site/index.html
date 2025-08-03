@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hydra Account Portal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🌠 Welcome to Hydra</h1>
+
+    <div class="form-section">
+      <h2>Create Account</h2>
+      <input type="text" id="signup-username" placeholder="Username" />
+      <input type="password" id="signup-password" placeholder="Password" />
+      <button onclick="createAccount()">Sign Up</button>
+      <p id="signup-message"></p>
+    </div>
+
+    <div class="form-section">
+      <h2>Login</h2>
+      <input type="text" id="login-username" placeholder="Username" />
+      <input type="password" id="login-password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <p id="login-message"></p>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
