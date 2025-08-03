@@ -2,9 +2,11 @@ from flask import Flask, request, jsonify
 from firebase_admin import credentials, firestore, initialize_app
 import os, json, re, hashlib, logging
 from datetime import datetime
+from flask_cors import CORS
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
+CORS(app)
 
 # 🔧 Init Firestore
 cred = credentials.Certificate(json.loads(os.environ["FIREBASE_CONFIG"]))
