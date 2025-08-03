@@ -1,56 +1,134 @@
 from flask import Flask, request, jsonify
-from firebase_admin import auth, firestore, credentials, initialize_app
-import os
-import logging
-import json
+from firebase_admin import credentials, firestore, initialize_app
+import os, json, re, hashlib, logging
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# 🧠 Firebase credentials from env
-firebase_json = os.environ.get("FIREBASE_CONFIG")
-if not firebase_json:
-    raise RuntimeError("FIREBASE_CONFIG environment variable is not set.")
-
-cred_dict = json.loads(firebase_json)
-cred = credentials.Certificate(cred_dict)
+# 🔧 Init Firestore
+cred = credentials.Certificate(json.loads(os.environ["FIREBASE_CONFIG"]))
 initialize_app(cred)
 db = firestore.client()
 
-@app.route("/link-service", methods=["POST"])
-def link_service():
-    data = request.get_json(force=True)
-    id_token = data.get("idToken")
-    platform = data.get("platform")
-    platform_data = data.get("platformData")
-    api_key = data.get("apiKey")
+BLACKLIST_PATH = "name-blacklist.txt"
+if os.path.exists(BLACKLIST_PATH):
+    with open(BLACKLIST_PATH) as f:
+        NAME_BLACKLIST = set(line.strip().lower() for line in f if line.strip())
+else:
+    NAME_BLACKLIST = set()
 
-    try:
-        decoded_token = auth.verify_id_token(id_token)
-        user_id = decoded_token["uid"]
-    except Exception as e:
-        logging.warning(f"ID token validation failed: {e}")
-        return jsonify({"error": "Invalid ID token"}), 401
+# 🧪 Username & Password Checks
+def is_valid_username(name):
+    return (
+        len(name) >= 3 and
+        re.match(r"^[a-zA-Z0-9_-]+$", name) and
+        name.lower() not in NAME_BLACKLIST
+    )
 
-    platform_doc = db.collection("approved_platforms").document(platform).get()
-    if not platform_doc.exists:
-        logging.warning(f"Platform not approved: {platform}")
-        return jsonify({"error": "Unknown platform"}), 403
+def is_valid_password(pw):
+    return (
+        8 <= len(pw) <= 64 and
+        re.search(r"[0-9]", pw) and
+        re.search(r"[!@#$%^&*(),.?\":{}|<>]", pw)
+    )
 
-    stored_key = platform_doc.to_dict().get("apiKey")
-    if stored_key != api_key:
-        logging.warning(f"Invalid API key for platform: {platform}")
-        return jsonify({"error": "Invalid API key"}), 403
+def hash_password(pw):
+    return hashlib.sha256(pw.encode("utf-8")).hexdigest()
 
-    db.collection("links").document(user_id).set({
-        "platform": platform,
-        "platformData": platform_data,
-        "linkedAt": firestore.SERVER_TIMESTAMP,
+def get_ip_mac_key(req):
+    return f"{req.remote_addr}_{req.headers.get('X-MAC-Address', '')}"
+
+# 🔐 Account creation rate limit
+def can_create_from_ip_mac(ip_mac):
+    doc = db.collection("ip_mac_creations").document(ip_mac).get()
+    if not doc.exists:
+        return True
+    last = doc.to_dict().get("lastAttempt")
+    return datetime.utcnow() - last.replace(tzinfo=None) > timedelta(days=1)
+
+def record_creation_ip_mac(ip_mac):
+    db.collection("ip_mac_creations").document(ip_mac).set({
+        "lastAttempt": datetime.utcnow()
     })
 
-    logging.info(f"Linked {platform} for user {user_id}")
-    return jsonify({"success": True}), 200
+# 🔒 Failed login tracking
+def record_failed_attempt(uid):
+    ref = db.collection("failed_attempts").document(uid)
+    doc = ref.get()
+    now = datetime.utcnow()
 
+    if doc.exists:
+        data = doc.to_dict()
+        timestamps = [ts.replace(tzinfo=None) for ts in data.get("timestamps", []) if now - ts.replace(tzinfo=None) < timedelta(hours=1)]
+        timestamps.append(now)
+        locked_until = data.get("lockedUntil")
+        if len(timestamps) >= 5:
+            ref.set({"timestamps": timestamps, "lockedUntil": now + timedelta(minutes=60)})
+        else:
+            ref.set({"timestamps": timestamps}, merge=True)
+    else:
+        ref.set({"timestamps": [now]})
+
+def is_locked(uid):
+    doc = db.collection("failed_attempts").document(uid).get()
+    if doc.exists:
+        locked_until = doc.to_dict().get("lockedUntil")
+        return locked_until and datetime.utcnow() < locked_until.replace(tzinfo=None)
+    return False
+
+# 🚧 Create Account
+@app.route("/create-account", methods=["POST"])
+def create_account():
+    data = request.get_json(force=True)
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+    ip_mac = get_ip_mac_key(request)
+
+    if not is_valid_username(username):
+        return jsonify({"error": "Invalid or forbidden username"}), 400
+    if not is_valid_password(password):
+        return jsonify({"error": "Weak password"}), 400
+    if not can_create_from_ip_mac(ip_mac):
+        return jsonify({"error": "Rate limit: 1 account/day per IP/MAC"}), 429
+
+    existing = db.collection("users").where("username", "==", username).get()
+    if existing:
+        return jsonify({"error": "Username already taken"}), 409
+
+    uid = hashlib.sha256(username.encode()).hexdigest()[:32]
+    db.collection("users").document(uid).set({
+        "username": username,
+        "passwordHash": hash_password(password),
+        "createdAt": firestore.SERVER_TIMESTAMP
+    })
+
+    record_creation_ip_mac(ip_mac)
+    logging.info(f"Created user: {username} from {ip_mac}")
+    return jsonify({"success": True, "userId": uid}), 201
+
+# 🔐 Login (with lockout)
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json(force=True)
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+
+    users = db.collection("users").where("username", "==", username).get()
+    if not users:
+        return jsonify({"error": "User not found"}), 404
+
+    user_doc = users[0]
+    uid = user_doc.id
+    if is_locked(uid):
+        return jsonify({"error": "Account temporarily locked"}), 403
+
+    if user_doc.to_dict().get("passwordHash") != hash_password(password):
+        record_failed_attempt(uid)
+        return jsonify({"error": "Invalid credentials"}), 403
+
+    return jsonify({"success": True, "userId": uid}), 200
+
+# 🧪 Run
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
