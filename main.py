@@ -1,15 +1,19 @@
-# main.py
 from flask import Flask, request, jsonify
 from firebase_admin import auth, firestore, credentials, initialize_app
 import os
 import logging
+import json
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# 🧠 Load Firebase credentials from env or file
-cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase-creds.json")
-cred = credentials.Certificate(cred_path)
+# 🧠 Firebase credentials from env
+firebase_json = os.environ.get("FIREBASE_CONFIG")
+if not firebase_json:
+    raise RuntimeError("FIREBASE_CONFIG environment variable is not set.")
+
+cred_dict = json.loads(firebase_json)
+cred = credentials.Certificate(cred_dict)
 initialize_app(cred)
 db = firestore.client()
 
@@ -21,7 +25,6 @@ def link_service():
     platform_data = data.get("platformData")
     api_key = data.get("apiKey")
 
-    # 🔐 Validate Firebase ID token
     try:
         decoded_token = auth.verify_id_token(id_token)
         user_id = decoded_token["uid"]
@@ -29,7 +32,6 @@ def link_service():
         logging.warning(f"ID token validation failed: {e}")
         return jsonify({"error": "Invalid ID token"}), 401
 
-    # 🧱 Validate platform via Firestore
     platform_doc = db.collection("approved_platforms").document(platform).get()
     if not platform_doc.exists:
         logging.warning(f"Platform not approved: {platform}")
@@ -40,7 +42,6 @@ def link_service():
         logging.warning(f"Invalid API key for platform: {platform}")
         return jsonify({"error": "Invalid API key"}), 403
 
-    # 📌 Link the platform to the user
     db.collection("links").document(user_id).set({
         "platform": platform,
         "platformData": platform_data,
@@ -51,6 +52,5 @@ def link_service():
     return jsonify({"success": True}), 200
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
