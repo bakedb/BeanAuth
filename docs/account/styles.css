@@ -1,0 +1,78 @@
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    color: #fff;
+    background: radial-gradient(circle at top left, #110011, #000) fixed;
+    overflow: hidden;
+  }
+  
+  .container {
+    max-width: 600px;
+    margin: auto;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 30px #bb77ff;
+    border-radius: 12px;
+    margin-top: 5vh;
+  }
+  
+  h1, h2 {
+    text-shadow: 0 0 5px #bb77ff;
+    margin-bottom: 1rem;
+  }
+  
+  input, button {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+  }
+  
+  button {
+    background: linear-gradient(to right, #8844cc, #aa66ff);
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  button:hover {
+    background: linear-gradient(to right, #aa66ff, #8844cc);
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  li {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0.3rem 0;
+    border-radius: 6px;
+  }
+  
+  #account-delete button {
+    background: linear-gradient(to right, #ff4444, #cc0000);
+  }
+  
+  #account-delete button:hover {
+    background: linear-gradient(to right, #cc0000, #ff4444);
+  }
+  
+  /* 🔥 Red alert when hovering near delete */
+  body.alert-danger {
+    background: radial-gradient(circle at top left, #330000, #000) fixed;
+  }
+  
+  body.alert-danger h1, 
+  body.alert-danger h2 {
+    text-shadow: 0 0 5px #ff5555;
+  }
+  
+  body.alert-danger .container {
+    box-shadow: 0 0 30px #ff4444;
+  }
+  

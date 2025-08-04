@@ -8,20 +8,36 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>👤 Account Management</h1>
+  <div class="container">
+    <h1>👤 Account Management</h1>
 
-  <div id="account-info">
-    <p><strong>Username:</strong> <span id="display-username">Loading...</span></p>
+    <div id="account-info">
+      <p><strong>Username:</strong> <span id="display-username">Loading...</span></p>
+    </div>
+
+    <div id="service-usage">
+      <h2>🛠️ Services Used</h2>
+      <ul id="service-list">
+        <li>Loading services...</li>
+      </ul>
+    </div>
+
+    <div id="password-update">
+      <h2>🔑 Change Password</h2>
+      <input type="password" id="new-password" placeholder="New password">
+      <button onclick="updatePassword()">Update</button>
+      <p id="update-message"></p>
+    </div>
+
+    <div id="account-delete">
+      <h2>⚠️ Delete Account</h2>
+      <p>This will remove your account from all services. This action cannot be undone.</p>
+      <button onclick="confirmDeletion()">🗑️ Delete My Account</button>
+      <p id="delete-message"></p>
+    </div>
+
+    <button onclick="logout()">🚪 Log Out</button>
   </div>
-
-  <div id="password-update">
-    <h2>🔑 Change Password</h2>
-    <input type="password" id="new-password" placeholder="New password">
-    <button onclick="updatePassword()">Update</button>
-    <p id="update-message"></p>
-  </div>
-
-  <button onclick="logout()">🚪 Log Out</button>
 
   <script src="account.js"></script>
 </body>
