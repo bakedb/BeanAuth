@@ -92,6 +92,7 @@ async function login() {
     if (response.ok) {
       message.textContent = `✅ Welcome, ${username}! Redirecting to dashboard...`;
       localStorage.setItem("username", username);
+      localStorage.setItem("sessionToken", result.token);
       setTimeout(() => {
         window.location.href = `${location.origin}/BeanAuth/account/account.html`;
       }, 1200);

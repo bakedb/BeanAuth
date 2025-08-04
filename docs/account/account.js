@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("sessionToken");
   const username = localStorage.getItem("username");
 
+  console.log("Username:", localStorage.getItem("username"));
+  console.log("Token:", localStorage.getItem("sessionToken"));  
+
   if (!token || !username) return window.location.href = `${location.origin}/BeanAuth/index.html`;
   document.getElementById("display-username").textContent = username;
 
