@@ -93,7 +93,7 @@ async function login() {
       message.textContent = `✅ Welcome, ${username}! Redirecting to dashboard...`;
       localStorage.setItem("username", username);
       setTimeout(() => {
-        window.location.href = "account/account.html";
+        window.location.href = `${location.origin}/BeanAuth/account/account.html`;
       }, 1200);
     } else {
       switch (response.status) {

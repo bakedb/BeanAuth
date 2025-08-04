@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("sessionToken");
   const username = localStorage.getItem("username");
 
-  if (!token || !username) return window.location.href = "index.html";
+  if (!token || !username) return window.location.href = `${location.origin}/BeanAuth/index.html`;
   document.getElementById("display-username").textContent = username;
 
   // 🔍 Load used services
@@ -87,7 +87,7 @@ function confirmDeletion() {
       if (data.success) {
         message.textContent = "✅ Account deleted.";
         localStorage.clear();
-        setTimeout(() => window.location.href = "index.html", 2000);
+        setTimeout(() => window.location.href = `${location.origin}/BeanAuth/index.html`, 2000);
       } else {
         message.textContent = `❌ ${data.error || "Deletion failed."}`;
       }
