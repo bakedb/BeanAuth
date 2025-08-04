@@ -16,12 +16,18 @@ function showDelayWarning(messageElement) {
   }, 5000);
 }
 
+function resetFeedback(message, spinner) {
+  message.textContent = "";
+  spinner.style.display = "none";
+}
+
 async function createAccount() {
   const username = document.getElementById("signup-username").value.trim();
   const password = document.getElementById("signup-password").value.trim();
   const message = document.getElementById("signup-message");
   const spinner = document.getElementById("signup-spinner");
 
+  resetFeedback(message, spinner);
   if (!validateInputs(username, password, message)) return;
 
   message.textContent = "⏳ Creating account...";
@@ -39,7 +45,8 @@ async function createAccount() {
     spinner.style.display = "none";
 
     if (response.ok) {
-      message.textContent = "🎉 Account created successfully!";
+      message.textContent = "🎉 Account created successfully! Please log in below.";
+      document.getElementById("login-username").value = username;
     } else {
       switch (response.status) {
         case 400:
@@ -65,6 +72,7 @@ async function login() {
   const message = document.getElementById("login-message");
   const spinner = document.getElementById("login-spinner");
 
+  resetFeedback(message, spinner);
   if (!validateInputs(username, password, message)) return;
 
   message.textContent = "⏳ Signing in...";
