@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
 from firebase_admin import credentials, firestore, initialize_app
-import os, json, re, hashlib, logging
-from datetime import datetime
 from flask_cors import CORS
+import os, json, re, hashlib, logging
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +19,6 @@ if os.path.exists(BLACKLIST_PATH):
 else:
     NAME_BLACKLIST = set()
 
-# 🧪 Username & Password Checks
 def is_valid_username(name):
     return (
         len(name) >= 3 and
@@ -82,6 +80,65 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 403
 
     return jsonify({"success": True, "userId": uid}), 200
+
+# 🔄 Update Password
+@app.route("/update-password", methods=["POST"])
+def update_password():
+    data = request.get_json(force=True)
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+
+    if not is_valid_username(username) or not is_valid_password(password):
+        return jsonify({"error": "Invalid username or weak password"}), 400
+
+    users = db.collection("users").where("username", "==", username).get()
+    if not users:
+        return jsonify({"error": "User not found"}), 404
+
+    uid = users[0].id
+    db.collection("users").document(uid).update({"passwordHash": hash_password(password)})
+    logging.info(f"Password updated for user: {username}")
+    return jsonify({"success": True}), 200
+
+# 🛠️ Fetch Used Services
+@app.route("/used-services", methods=["GET"])
+def used_services():
+    username = request.args.get("username", "").strip()
+
+    if not is_valid_username(username):
+        return jsonify({"error": "Invalid username"}), 400
+
+    services = []
+    results = db.collection("usage").where("username", "==", username).get()
+    for doc in results:
+        info = doc.to_dict()
+        services.append(info.get("service"))
+
+    return jsonify({"services": services}), 200
+
+# 🗑️ Delete Account
+@app.route("/delete-account", methods=["POST"])
+def delete_account():
+    data = request.get_json(force=True)
+    username = data.get("username", "").strip()
+
+    if not is_valid_username(username):
+        return jsonify({"error": "Invalid username"}), 400
+
+    users = db.collection("users").where("username", "==", username).get()
+    if not users:
+        return jsonify({"error": "User not found"}), 404
+
+    uid = users[0].id
+    db.collection("users").document(uid).delete()
+
+    # Optional: also delete usage records
+    usage_docs = db.collection("usage").where("username", "==", username).get()
+    for doc in usage_docs:
+        doc.reference.delete()
+
+    logging.info(f"Deleted account + usage for: {username}")
+    return jsonify({"success": True}), 200
 
 # 🧪 Run
 if __name__ == "__main__":
