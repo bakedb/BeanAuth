@@ -8,16 +8,15 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 CORS(app)
 
-# 🔧 Init Firestore
 cred = credentials.Certificate(json.loads(os.environ["FIREBASE_CONFIG"]))
 initialize_app(cred)
 db = firestore.client()
 
-# 🛡️ In-memory session store (replaceable with Redis later)
-SESSIONS = {}
-ALLOWED_FIELDS = {"nickname", "score", "favoriteColor"}
-
+SESSIONS = {}  # 🔐 In-memory session map
+ALLOWED_USER_FIELDS = {"nickname", "score", "favoriteColor"}
 BLACKLIST_PATH = "name-blacklist.txt"
+
+# 🛡️ Username blacklist
 NAME_BLACKLIST = set()
 if os.path.exists(BLACKLIST_PATH):
     with open(BLACKLIST_PATH) as f:
@@ -39,6 +38,7 @@ def is_valid_password(pw):
 
 def hash_password(pw):
     return hashlib.sha256(pw.encode("utf-8")).hexdigest()
+
 @app.route("/create-account", methods=["POST"])
 def create_account():
     data = request.get_json(force=True)
@@ -61,8 +61,9 @@ def create_account():
         "createdAt": firestore.SERVER_TIMESTAMP
     })
 
-    logging.info(f"Created user: {username}")
+    logging.info(f"✅ Created user: {username}")
     return jsonify({"success": True, "userId": uid}), 201
+
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json(force=True)
@@ -79,17 +80,9 @@ def login():
 
     token = str(uuid4())
     SESSIONS[token] = user_doc.id
-
     return jsonify({"success": True, "token": token}), 200
-@app.route("/get-user-data", methods=["POST"])
-def get_user_data():
-    token = request.get_json(force=True).get("token", "").strip()
-    uid = SESSIONS.get(token)
-    if not uid:
-        return jsonify({"error": "Invalid session"}), 401
 
-    doc = db.collection("user-data").document(uid).get().to_dict() or {}
-    return jsonify(doc), 200
+
 @app.route("/update-user-data", methods=["POST"])
 def update_user_data():
     data = request.get_json(force=True)
@@ -100,12 +93,42 @@ def update_user_data():
     if not uid:
         return jsonify({"error": "Invalid session"}), 401
 
-    cleaned = {k: v for k, v in updates.items() if k in ALLOWED_FIELDS}
+    cleaned = {k: v for k, v in updates.items() if k in ALLOWED_USER_FIELDS}
     if not cleaned:
         return jsonify({"error": "No valid fields"}), 400
 
     db.collection("user-data").document(uid).set(cleaned, merge=True)
     return jsonify({"success": True}), 200
+
+@app.route("/update-app-data", methods=["POST"])
+def update_app_data():
+    data = request.get_json(force=True)
+    token = data.get("token", "").strip()
+    app_id = data.get("app", "").strip()
+    fields = data.get("info", {})
+
+    uid = SESSIONS.get(token)
+    if not uid:
+        return jsonify({"error": "Invalid session"}), 401
+    if not app_id or not isinstance(fields, dict):
+        return jsonify({"error": "Missing or invalid app info"}), 400
+
+    db.collection("users").document(uid).collection(app_id).document("profile").set(fields, merge=True)
+    return jsonify({"success": True}), 200
+
+@app.route("/get-app-data", methods=["POST"])
+def get_app_data():
+    data = request.get_json(force=True)
+    token = data.get("token", "").strip()
+    app_id = data.get("app", "").strip()
+
+    uid = SESSIONS.get(token)
+    if not uid or not app_id:
+        return jsonify({"error": "Invalid session or app"}), 401
+
+    doc = db.collection("users").document(uid).collection(app_id).document("profile").get().to_dict()
+    return jsonify(doc or {}), 200
+
 @app.route("/update-password", methods=["POST"])
 def update_password():
     data = request.get_json(force=True)
@@ -119,8 +142,9 @@ def update_password():
         return jsonify({"error": "Weak password"}), 400
 
     db.collection("users").document(uid).update({"passwordHash": hash_password(new_pw)})
-    logging.info(f"Password updated for: {uid}")
+    logging.info(f"🔐 Password updated for: {uid}")
     return jsonify({"success": True}), 200
+
 @app.route("/used-services", methods=["POST"])
 def used_services():
     token = request.get_json(force=True).get("token", "").strip()
@@ -131,6 +155,7 @@ def used_services():
     usage = db.collection("usage").where("uid", "==", uid).get()
     services = [doc.to_dict().get("service") for doc in usage]
     return jsonify({"services": services}), 200
+
 @app.route("/delete-account", methods=["POST"])
 def delete_account():
     token = request.get_json(force=True).get("token", "").strip()
@@ -139,11 +164,12 @@ def delete_account():
         return jsonify({"error": "Invalid session"}), 401
 
     db.collection("users").document(uid).delete()
+    db.collection("user-data").document(uid).delete()
     for doc in db.collection("usage").where("uid", "==", uid).get():
         doc.reference.delete()
 
-    db.collection("user-data").document(uid).delete()
-    logging.info(f"Deleted account + data for: {uid}")
+    logging.info(f"Deleted account + subcollections for: {uid}")
     return jsonify({"success": True}), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
