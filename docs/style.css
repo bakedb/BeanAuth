@@ -1,63 +1,67 @@
+/* === Global Styles and Animated Background === */
+
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f5f5f5;
+  font-family: 'Segoe UI', Arial, sans-serif;
   margin: 0;
-  padding: 20px;
-}
-
-.container {
-  max-width: 400px;
-  margin: auto;
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  text-align: center;
-}
-
-h1, h2 {
-  margin-bottom: 20px;
-}
-
-input {
-  display: block;
-  width: 100%;
-  margin: 10px 0;
-  padding: 10px;
-  font-size: 1rem;
-}
-
-button {
-  padding: 10px;
-  font-size: 1rem;
-  cursor: pointer;
-  background-color: #4caf50;
+  padding: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e1e2f, #2b2b44, #3a3a5c, #1e1e2f);
+  background-size: 400% 400%;
+  animation: gradientDrift 30s ease infinite;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   color: white;
-  border: none;
-  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
 }
 
-button:hover {
-  background-color: #45a049;
+/* === Animated Gradient Motion === */
+
+@keyframes gradientDrift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-p {
-  font-size: 0.9rem;
-  margin-top: 10px;
-  white-space: pre-line;
+/* === Optional: Misty Overlay for Depth === */
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.03), transparent);
+  animation: cloudDrift 40s linear infinite;
+  z-index: -1;
 }
 
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 4px solid #ccc;
-  border-top: 4px solid #333;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 10px auto;
-  display: none;
+@keyframes cloudDrift {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(30px, 20px); }
+  100% { transform: translate(0, 0); }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* === Centered Content Styling === */
+
+main {
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+}
+
+/* === Optional: Add transitions or effects to elements === */
+
+h1, p {
+  animation: fadeIn 2s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
 }
