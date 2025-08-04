@@ -1,33 +1,87 @@
+/* === Animated Background and Mist Overlay === */
+
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background: linear-gradient(145deg, #1e1e2f, #2b2b44);
-  color: #fff;
+  background: linear-gradient(135deg, #1e1e2f, #2b2b44, #3a3a5c, #1e1e2f);
+  background-size: 400% 400%;
+  animation: gradientDrift 30s ease infinite;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  color: #f8cdda;
 }
 
+@keyframes gradientDrift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.03), transparent);
+  animation: cloudDrift 40s linear infinite;
+  z-index: -1;
+}
+
+@keyframes cloudDrift {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(30px, 20px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* === Glowing Container Window === */
+
 .container {
-  background: #2b2b44;
+  background: #2b2b44cc;
   border-radius: 12px;
   padding: 30px;
   width: 360px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
   text-align: center;
+  box-shadow:
+    0 0 20px rgba(255, 255, 255, 0.2),
+    0 8px 30px rgba(0, 0, 0, 0.6);
   transition: box-shadow 0.3s ease;
+  z-index: 1;
 }
 
 .container:hover {
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  box-shadow:
+    0 0 30px rgba(255, 255, 255, 0.4),
+    0 12px 40px rgba(0, 0, 0, 0.7);
 }
+
+/* === Text Styling === */
 
 h1, h2 {
   margin-bottom: 20px;
   color: #f8cdda;
+  font-size: 1.4em;
+  font-weight: bold;
+  line-height: 1.2;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
+
+p {
+  font-size: 1em;
+  color: #f8cdda;
+  margin-top: 10px;
+  white-space: pre-line;
+  line-height: 1.4;
+}
+
+/* === Inputs === */
 
 input {
   width: 100%;
@@ -38,11 +92,14 @@ input {
   background: #444464;
   color: #fff;
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 input::placeholder {
   color: #c0c0e0;
 }
+
+/* === Buttons + Hover Glow === */
 
 button {
   width: 100%;
@@ -54,20 +111,15 @@ button {
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.3s ease;
 }
 
 button:hover {
   background-color: #4752d5;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
 }
 
-p {
-  font-size: 0.9em;
-  color: #f8cdda;
-  text-align: center;
-  margin-top: 10px;
-  white-space: pre-line;
-}
+/* === Spinner === */
 
 .spinner {
   width: 24px;
@@ -78,6 +130,7 @@ p {
   animation: spin 1s linear infinite;
   margin: 12px auto;
   display: none;
+  box-shadow: 0 0 12px rgba(248, 205, 218, 0.6); /* ✨ soft pink glow */
 }
 
 @keyframes spin {
