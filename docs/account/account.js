@@ -1,5 +1,7 @@
 const BASE_URL = "https://beanauth.onrender.com";
 
+const REPO_ROOT = location.origin + location.pathname.split("/").slice(0, 2).join("/");
+
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("sessionToken");
   const username = localStorage.getItem("username");
@@ -98,8 +100,11 @@ function confirmDeletion() {
 
 // 🚪 Logout
 function logout() {
-  localStorage.clear();
-  window.location.href = "index.html";
+  document.body.classList.add("fade-out");
+  setTimeout(() => {
+    localStorage.clear();
+    window.location.href = `${REPO_ROOT}/index.html`;
+  }, 600);
 }
 
 // 🔴 Danger detection glow
