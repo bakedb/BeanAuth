@@ -1,6 +1,6 @@
 const BASE_URL = "https://beanauth.onrender.com";
 
-const REPO_ROOT = location.origin + location.pathname.split("/").slice(0, 2).join("/");
+const REPO_ROOT = `${location.origin}/BeanAuth`;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("sessionToken");
@@ -87,7 +87,7 @@ function confirmDeletion() {
       if (data.success) {
         message.textContent = "✅ Account deleted.";
         localStorage.clear();
-        setTimeout(() => window.location.href = `${location.origin}/BeanAuth/index.html`, 2000);
+        setTimeout(() => window.location.href = `${REPO_ROOT}/index.html`, 2000);
       } else {
         message.textContent = `❌ ${data.error || "Deletion failed."}`;
       }
