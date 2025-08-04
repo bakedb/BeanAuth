@@ -1,22 +1,28 @@
 const BASE_URL = "https://beanauth.onrender.com";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("sessionToken");
   const username = localStorage.getItem("username");
-  if (!username) return window.location.href = "index.html";
 
+  if (!token || !username) return window.location.href = "index.html";
   document.getElementById("display-username").textContent = username;
 
   // 🔍 Load used services
   try {
-    const res = await fetch(`${BASE_URL}/used-services?username=${username}`);
-    const { services } = await res.json();
+    const res = await fetch(`${BASE_URL}/used-services`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+
+    const result = await res.json();
     const list = document.getElementById("service-list");
     list.innerHTML = "";
 
-    if (!services || services.length === 0) {
+    if (!result.services || result.services.length === 0) {
       list.innerHTML = "<li>No services used yet.</li>";
     } else {
-      services.forEach(service => {
+      result.services.forEach(service => {
         const li = document.createElement("li");
         li.textContent = service;
         list.appendChild(li);
@@ -32,6 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function updatePassword() {
   const password = document.getElementById("new-password").value.trim();
   const message = document.getElementById("update-message");
+  const token = localStorage.getItem("sessionToken");
 
   if (!password) {
     message.textContent = "⚠️ Please enter a new password.";
@@ -44,14 +51,10 @@ async function updatePassword() {
     const response = await fetch(`${BASE_URL}/update-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: localStorage.getItem("username"),
-        password
-      })
+      body: JSON.stringify({ token, password })
     });
 
     const result = await response.json();
-
     if (response.ok) {
       message.textContent = "✅ Password updated!";
     } else {
@@ -68,19 +71,20 @@ function confirmDeletion() {
   const confirmed = confirm("Are you sure? This will delete your account permanently.");
   if (!confirmed) return;
 
+  const token = localStorage.getItem("sessionToken");
   const message = document.getElementById("delete-message");
   message.textContent = "⏳ Deleting account...";
 
   fetch(`${BASE_URL}/delete-account`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: localStorage.getItem("username") })
+    body: JSON.stringify({ token })
   })
     .then(res => res.json())
     .then(data => {
       if (data.success) {
         message.textContent = "✅ Account deleted.";
-        localStorage.removeItem("username");
+        localStorage.clear();
         setTimeout(() => window.location.href = "index.html", 2000);
       } else {
         message.textContent = `❌ ${data.error || "Deletion failed."}`;
@@ -94,7 +98,7 @@ function confirmDeletion() {
 
 // 🚪 Logout
 function logout() {
-  localStorage.removeItem("username");
+  localStorage.clear();
   window.location.href = "index.html";
 }
 
