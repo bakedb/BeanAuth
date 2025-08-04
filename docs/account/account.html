@@ -1,0 +1,28 @@
+<!-- account.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Manage Your Account</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>👤 Account Management</h1>
+
+  <div id="account-info">
+    <p><strong>Username:</strong> <span id="display-username">Loading...</span></p>
+  </div>
+
+  <div id="password-update">
+    <h2>🔑 Change Password</h2>
+    <input type="password" id="new-password" placeholder="New password">
+    <button onclick="updatePassword()">Update</button>
+    <p id="update-message"></p>
+  </div>
+
+  <button onclick="logout()">🚪 Log Out</button>
+
+  <script src="account.js"></script>
+</body>
+</html>

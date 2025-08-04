@@ -54,6 +54,11 @@ async function login() {
 
     if (response.ok) {
       message.textContent = `✅ Welcome, ${username}! Login successful.`;
+      setTimeout(() => {
+        window.location.href = "account/account.html";
+      }, 1000);
+      localStorage.setItem("username", username);
+      window.location.href = "account/account.html"; // Update path if needed
     } else {
       switch (response.status) {
         case 403:
