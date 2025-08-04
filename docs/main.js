@@ -1,11 +1,32 @@
 const BASE_URL = "https://beanauth.onrender.com"; // no trailing slash
 
+function validateInputs(username, password, message) {
+  if (!username || !password) {
+    message.textContent = "⚠️ Please fill in both fields.";
+    return false;
+  }
+  return true;
+}
+
+function showDelayWarning(messageElement) {
+  setTimeout(() => {
+    if (messageElement.textContent.includes("⏳")) {
+      messageElement.textContent += "\n🕒 Just a heads-up: the server may take up to 60 seconds to respond during low activity.";
+    }
+  }, 5000);
+}
+
 async function createAccount() {
   const username = document.getElementById("signup-username").value.trim();
   const password = document.getElementById("signup-password").value.trim();
   const message = document.getElementById("signup-message");
+  const spinner = document.getElementById("signup-spinner");
+
+  if (!validateInputs(username, password, message)) return;
 
   message.textContent = "⏳ Creating account...";
+  spinner.style.display = "block";
+  showDelayWarning(message);
 
   try {
     const response = await fetch(`${BASE_URL}/create-account`, {
@@ -15,6 +36,7 @@ async function createAccount() {
     });
 
     const result = await response.json();
+    spinner.style.display = "none";
 
     if (response.ok) {
       message.textContent = "🎉 Account created successfully!";
@@ -32,6 +54,7 @@ async function createAccount() {
     }
   } catch (err) {
     console.error("Account creation error:", err);
+    spinner.style.display = "none";
     message.textContent = "🚫 Network error. Please try again later.";
   }
 }
@@ -40,8 +63,13 @@ async function login() {
   const username = document.getElementById("login-username").value.trim();
   const password = document.getElementById("login-password").value.trim();
   const message = document.getElementById("login-message");
+  const spinner = document.getElementById("login-spinner");
+
+  if (!validateInputs(username, password, message)) return;
 
   message.textContent = "⏳ Signing in...";
+  spinner.style.display = "block";
+  showDelayWarning(message);
 
   try {
     const response = await fetch(`${BASE_URL}/login`, {
@@ -51,14 +79,14 @@ async function login() {
     });
 
     const result = await response.json();
+    spinner.style.display = "none";
 
     if (response.ok) {
-      message.textContent = `✅ Welcome, ${username}! Login successful.`;
+      message.textContent = `✅ Welcome, ${username}! Redirecting to dashboard...`;
+      localStorage.setItem("username", username);
       setTimeout(() => {
         window.location.href = "account/account.html";
-      }, 1000);
-      localStorage.setItem("username", username);
-      window.location.href = "account/account.html"; // Update path if needed
+      }, 1200);
     } else {
       switch (response.status) {
         case 403:
@@ -73,6 +101,7 @@ async function login() {
     }
   } catch (err) {
     console.error("Login error:", err);
+    spinner.style.display = "none";
     message.textContent = "🚫 Network error. Is the server awake?";
   }
 }
