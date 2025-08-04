@@ -1,5 +1,6 @@
-const BASE_URL = "https://beanauth.onrender.com"; // no trailing slash
+const BASE_URL = "https://beanauth.onrender.com"; // Backend root, no trailing slash
 
+// 🚦 Validate username and password
 function validateInputs(username, password, message) {
   if (!username || !password) {
     message.textContent = "⚠️ Please fill in both fields.";
@@ -8,6 +9,7 @@ function validateInputs(username, password, message) {
   return true;
 }
 
+// ⏳ Warn if the server is cold-starting
 function showDelayWarning(messageElement) {
   setTimeout(() => {
     if (messageElement.textContent.includes("⏳")) {
@@ -16,11 +18,13 @@ function showDelayWarning(messageElement) {
   }, 5000);
 }
 
+// 🧼 Reset visual feedback before an operation
 function resetFeedback(message, spinner) {
   message.textContent = "";
   spinner.style.display = "none";
 }
 
+// 🎉 Signup flow
 async function createAccount() {
   const username = document.getElementById("signup-username").value.trim();
   const password = document.getElementById("signup-password").value.trim();
@@ -66,6 +70,7 @@ async function createAccount() {
   }
 }
 
+// 🔐 Login flow
 async function login() {
   const username = document.getElementById("login-username").value.trim();
   const password = document.getElementById("login-password").value.trim();
@@ -87,27 +92,31 @@ async function login() {
     });
 
     const result = await response.json();
+    console.log("Full login response:", result); // 🧪 helpful for tracing
+
     spinner.style.display = "none";
 
-    if (response.ok) {
+    if (response.ok && result.token) {
       message.textContent = `✅ Welcome, ${username}! Redirecting to dashboard...`;
+
+      // 🗝️ Store session info
       localStorage.setItem("username", username);
       localStorage.setItem("sessionToken", result.token);
+
+      // 🧭 Log for debugging
+      console.log("Received token:", result.token);
+      console.log("Type of token:", typeof result.token);
+
+      // 🎬 Redirect
       setTimeout(() => {
         window.location.href = `${location.origin}/BeanAuth/account/account.html`;
       }, 1200);
+
     } else {
-      switch (response.status) {
-        case 403:
-          message.textContent = "🔐 Incorrect password. Try again.";
-          break;
-        case 404:
-          message.textContent = "👤 Account not found. Did you sign up yet?";
-          break;
-        default:
-          message.textContent = `❌ Login failed: ${result.error || "Unexpected error"}`;
-      }
+      message.textContent = `❌ Login failed: ${result.error || "Missing session token"}`;
+      console.warn("⚠️ Login succeeded but no token returned:", result);
     }
+
   } catch (err) {
     console.error("Login error:", err);
     spinner.style.display = "none";

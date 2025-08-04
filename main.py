@@ -82,6 +82,8 @@ def login():
     SESSIONS[token] = user_doc.id
     return jsonify({"success": True, "token": token}), 200
 
+    logging.info(f"🪪 Session token for {username}: {token}")
+
 
 @app.route("/update-user-data", methods=["POST"])
 def update_user_data():
